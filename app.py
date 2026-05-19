@@ -488,7 +488,7 @@ st.title("🐍POD Report Generation")
 
 user_input = st.text_area("請貼上 Calc Robot 計算結果:", height=300)
 
-TEMPLATE_PATH = r"D:\OneDrive - Wistron Corporation\文件\EKH500\POD_tools\Report files_test\Report_sample.pptx"
+TEMPLATE_PATH = os.path.join(os.path.expanduser("~"), "Downloads", "Report_sample.pptx")
 
 downloads_folder = os.path.join(os.path.expanduser('~'), 'Downloads')
 OUTPUT_PATH = os.path.join(downloads_folder, "Output_Report.pptx") 
