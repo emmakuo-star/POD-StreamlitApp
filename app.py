@@ -10,6 +10,28 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml.xmlchemy import OxmlElement
 
+# 密碼驗證
+try:
+    password = st.secrets["password"]
+except:
+    password = "EKH500"  # 預設密碼
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔐 登入")
+    user_password = st.text_input("請輸入密碼:", type="password")
+    
+    if st.button("登入"):
+        if user_password == password:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("❌ 密碼錯誤")
+    st.stop()
+
+
 st.set_page_config(
     page_title="POD Report",
     page_icon="🐍"   
@@ -466,7 +488,7 @@ st.title("🐍POD Report Generation")
 
 user_input = st.text_area("請貼上 Calc Robot 計算結果:", height=300)
 
-TEMPLATE_PATH = r"\\10.32.40.149\FileSharing\Emma\Report_sample.pptx"
+TEMPLATE_PATH = r"D:\OneDrive - Wistron Corporation\文件\EKH500\POD_tools\Report files_test\Report_sample.pptx"
 
 downloads_folder = os.path.join(os.path.expanduser('~'), 'Downloads')
 OUTPUT_PATH = os.path.join(downloads_folder, "Output_Report.pptx") 
