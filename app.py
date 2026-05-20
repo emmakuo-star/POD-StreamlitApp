@@ -483,6 +483,8 @@ def generate_pptx(data, template_path, output_path):
     prs.save(output_path)
 
 # 0. 初始化 Session State
+if "input_content" not in st.session_state:
+    st.session_state.input_content = ""
 if "pptx_data" not in st.session_state:
     st.session_state.pptx_data = None  
 if "download_clicked" not in st.session_state:
@@ -492,23 +494,43 @@ if "download_clicked" not in st.session_state:
 def on_download_click():
     st.session_state.download_clicked = True
 
+def on_clear_click():
+    st.session_state.input_content = ""       # 1. 清空文字框內容
+    st.session_state.pptx_data = None         # 2. 清除暫存的檔案資料
+    st.session_state.download_clicked = False # 3. 重置下載狀態
+
 # ==========================================
 # 4. Streamlit UI
 # ==========================================
 st.title("🐍POD Report Generation")
 
-user_input = st.text_area("請貼上 Calc Robot 計算結果:", height=300)
+user_input = st.text_area("請貼上 Calc Robot 計算結果:", height=300, key="input_content")
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "Report_sample.pptx")
 
-if st.button("生成 PPTX 檔案"):
-    if user_input.strip():
-        parsed_data = parse_data(user_input) 
+# 使用 columns 讓兩個按鈕並排呈現
+col1, col2, col3 = st.columns([2, 4, 1])
+
+with col1:
+    generate_btn = st.button("生成 PPTX", use_container_width=True)
+with col3:
+    # 綁定 on_clear_click 函式
+    clear_btn = st.button("清除內容", on_click=on_clear_click, use_container_width=True)
+
+
+# 當點擊「生成 PPTX」時
+if generate_btn:
+    if st.session_state.input_content.strip():
+        parsed_data = parse_data(st.session_state.input_content) 
+        
         try:
+            # 建立緩衝區並寫入檔案
             pptx_buffer = io.BytesIO()
             generate_pptx(parsed_data, TEMPLATE_PATH, pptx_buffer) 
             pptx_buffer.seek(0)
             
+            # 將生成好的檔案暫存到 session_state
             st.session_state.pptx_data = pptx_buffer.getvalue()
+            # 重置下載狀態
             st.session_state.download_clicked = False 
 
         except Exception as e:
@@ -518,10 +540,8 @@ if st.button("生成 PPTX 檔案"):
 
 
 # 下載區塊 UI (依據 Session State 狀態顯示)
-# 只要 session_state 裡面有檔案，就顯示下載區塊
 if st.session_state.pptx_data is not None:
     
-    # 判斷是否已經點擊過下載
     if st.session_state.download_clicked:
         st.success("✅ 下載成功！")
     else:
