@@ -11,25 +11,26 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml.xmlchemy import OxmlElement
 
-# 密碼驗證
-try:
-    password = st.secrets["password"]
-except:
-    password = "EKH500"  # 預設密碼
+password = st.secrets["password"]
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
     st.title("🔐 登入")
-    user_password = st.text_input("請輸入密碼:", type="password")
-    
-    if st.button("登入"):
-        if user_password == password:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("❌ 密碼錯誤")
+    with st.form("login_form"):
+        user_password = st.text_input("請輸入密碼:", type="password")
+        
+        # 將原本的 st.button 改成 st.form_submit_button
+        submit_btn = st.form_submit_button("登入")
+        
+        if submit_btn:
+            if user_password == password:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("❌ 密碼錯誤")
+                
     st.stop()
 
 
