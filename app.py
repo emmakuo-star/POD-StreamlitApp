@@ -1,10 +1,11 @@
+import os 
+import io
 import streamlit as st
 import re
 from datetime import datetime
 import collections
 
 from pptx import Presentation
-import os 
 from pptx.util import Cm, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
@@ -481,27 +482,56 @@ def generate_pptx(data, template_path, output_path):
 
     prs.save(output_path)
 
+# 0. 初始化 Session State
+if "pptx_data" not in st.session_state:
+    st.session_state.pptx_data = None  
+if "download_clicked" not in st.session_state:
+    st.session_state.download_clicked = False
+
+# 定義下載按鈕被點擊時的動作 (Callback)
+def on_download_click():
+    st.session_state.download_clicked = True
+
 # ==========================================
 # 4. Streamlit UI
 # ==========================================
 st.title("🐍POD Report Generation")
 
 user_input = st.text_area("請貼上 Calc Robot 計算結果:", height=300)
-
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "Report_sample.pptx")
-
-downloads_folder = os.path.join(os.path.expanduser('~'), 'Downloads')
-OUTPUT_PATH = os.path.join(downloads_folder, "Output_Report.pptx") 
 
 if st.button("生成 PPTX 檔案"):
     if user_input.strip():
-        parsed_data = parse_data(user_input)
+        parsed_data = parse_data(user_input) 
         try:
-            generate_pptx(parsed_data, TEMPLATE_PATH, OUTPUT_PATH)
-            st.success(f"成功生成檔案！已存至：{OUTPUT_PATH}")
-            with open(OUTPUT_PATH, "rb") as f:
-                st.download_button("📥 點此下載", data=f, file_name="Updated_Report.pptx", mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+            pptx_buffer = io.BytesIO()
+            generate_pptx(parsed_data, TEMPLATE_PATH, pptx_buffer) 
+            pptx_buffer.seek(0)
+            
+            st.session_state.pptx_data = pptx_buffer.getvalue()
+            st.session_state.download_clicked = False 
+
         except Exception as e:
-            st.error(f"寫入 PPTX 時發生錯誤，請確認檔案是否被佔用或路徑錯誤：{e}")
+            st.error(f"寫入 PPTX 時發生錯誤：{e}")
     else:
         st.warning("請先貼上資料。")
+
+
+# 下載區塊 UI (依據 Session State 狀態顯示)
+# 只要 session_state 裡面有檔案，就顯示下載區塊
+if st.session_state.pptx_data is not None:
+    
+    # 判斷是否已經點擊過下載
+    if st.session_state.download_clicked:
+        st.success("✅ 下載成功！")
+    else:
+        st.success("✅ 檔案成功生成！點擊下方按鈕下載")
+        
+    st.download_button(
+        label="📥 下載檔案",
+        data=st.session_state.pptx_data,
+        file_name="Updated_Report.pptx",
+        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        disabled=st.session_state.download_clicked,  # 如果已經點擊過，就 Disable
+        on_click=on_download_click                   # 點擊時執行 on_download_click 函式
+    )
